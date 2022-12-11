@@ -1,0 +1,13 @@
+{"type": "record",
+ "name": "GreenCities",
+ "fields": [
+     {"name": "city", "type": "string"},         
+    {"name": "People", "type": "int"},
+    {"name": "Planet", "type": "int"},
+    {"name": "Profit", "type": "int"},
+    {"name": "Overall", "type" :"int"},
+    {"name": "Country", "type":"string"},
+    {"name": "Continent", "type":"string"}
+ ]
+}
+

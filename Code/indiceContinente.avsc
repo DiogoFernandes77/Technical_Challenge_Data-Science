@@ -1,0 +1,9 @@
+{"type": "record",
+ "name": "IndiceContinente",
+ "fields": [
+     {"name": "Continent", "type": "string"},         
+    {"name": "Ocurrences", "type": "int"},
+    {"name": "Rank", "type": "int"}
+    
+ ]
+}
