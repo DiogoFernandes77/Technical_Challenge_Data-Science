@@ -19,6 +19,9 @@ warnings.warn = warn
 
 current_dir = os.getcwd()
 
+coef_social = 0.26
+coef_ambiental = 0.45
+coef_economico = 0.48
 
 
 def csvToAvro():
@@ -38,44 +41,149 @@ def indiceContinente():
     reader = DataFileReader(open(current_dir + "/GreenCities.avro", "rb"), DatumReader())
     cont_dict = {}
     for user in reader:
+        #print(country_dict)
         if (user["Continent"] in cont_dict.keys()):
-            cont_dict[user["Continent"]] = cont_dict[user["Continent"]] + 1
+            cont_dict[user["Continent"]] = [ cont_dict[user["Continent"]][0]  + user["People"], cont_dict[user["Continent"]][1] + user["Planet"], cont_dict[user["Continent"]][2] + user["Profit"], cont_dict[user["Continent"]][3] + 1]
         else:
-            cont_dict.update({user["Continent"]: 1})
+            cont_dict[user["Continent"]] = [user["People"], user["Planet"], user["Profit"], 1]
          
     reader.close()
-    #sort dict
-    cont_dict = dict(sorted(cont_dict.items(), key=lambda x:x[1],reverse=True))
+    cont_info={}
+    
+    #estimativas dos modelos ML
+    for continent in cont_dict.keys():
+        media = [cont_dict[continent][0]/ cont_dict[continent][3] , cont_dict[continent][1]/ cont_dict[continent][3] , cont_dict[continent][2]/ cont_dict[continent][3] ]
+        
+        results = []
+        for regressor in reg_list:
+            #pred = regressor.predict(sc.transform([media]))
+            pred = regressor.predict([media])
+            results.append(pred[0])
+        
+        
+        cont_info[continent] =  media + results
+        
+    #print(country_info)
+    #Calculo dos ranks
+    for x in range(3,8):#calcular o rank para cada algoritmo
+        tmp = {}
+        for continent in cont_info.keys():
+            tmp[continent] = cont_info[continent][x]
+        #print(tmp)
+        ordered_tmp = dict(sorted(tmp.items(), key=lambda x:x[1]))
+        #print(ordered_tmp)
+        rank = 1
+        for continent in ordered_tmp.keys():
+            copy = cont_info[continent].copy()
+            copy[x] = rank
+            cont_info[continent] = copy
+            rank += 1
+
+    #Calculo do fator mais importante
+    for continent in cont_info.keys():
+        ft_s = cont_info[continent][0] * coef_social
+        ft_a = cont_info[continent][1] * coef_ambiental
+        ft_e = cont_info[continent][2] * coef_economico
+
+        if(ft_s < ft_a and ft_s < ft_e):
+            cont_info[continent].append("fator social")
+        elif(ft_a < ft_s and ft_a < ft_e):
+            cont_info[continent].append("fator ambiental")
+        elif(ft_e < ft_s and ft_e < ft_a):
+            cont_info[continent].append("fator economico")
+        else:
+            cont_info[continent].append("fatores empatados")
+    
+    ordered_dic = dict(sorted(cont_info.items(), key=lambda x:x[1][3]))
+    #print(ordered_dic)
     
     schema = avro.schema.parse(open(current_dir + "/indiceContinente.avsc", "rb").read())
-    writer = DataFileWriter(open("indiceContinent.avro", "wb"), DatumWriter(), schema)
-    cnt = 1
-    for key in cont_dict:
-        writer.append({"Continent": key, "Ocurrences": cont_dict[key], "Rank": cnt})
-        cnt +=1
-    writer.close()  
+    writer = DataFileWriter(open("indiceContinente.avro", "wb"), DatumWriter(), schema)
     
-    #check results
-    # reader = DataFileReader(open(current_dir + "/indiceContinent.avro", "rb"), DatumReader())
-    # for x in reader:
-    #     print(x) 
+    for continente in ordered_dic:
+        tmp = ordered_dic[continente]
+        writer.append({"Continente": continente, "Fator Social": int(tmp[0]), "Fator Ambiental": int(tmp[1]), "Fator Economico": int(tmp[2]), "Rank R.Linear": tmp[3], "Rank ElasticNet" : tmp[4], "Rank LassoLars": tmp[5], "Rank Lasso" : tmp[6], "Rank Ridge": tmp[7], "Fator Mais Importante": tmp[8] })
+    writer.close()  
+    reader = DataFileReader(open(current_dir + "/indiceContinente.avro", "rb"), DatumReader())
+    for x in reader:
+        print(x) 
     
     
 
 def indicePais():
+    
     reader = DataFileReader(open(current_dir + "/GreenCities.avro", "rb"), DatumReader())
     country_dict = {}
     for user in reader:
+        #print(country_dict)
         if (user["Country"] in country_dict.keys()):
-            country_dict[user["Country"]] = country_dict[user["Country"]] + 1
+            country_dict[user["Country"]] = [ country_dict[user["Country"]][0]  + user["People"], country_dict[user["Country"]][1] + user["Planet"], country_dict[user["Country"]][2] + user["Profit"], country_dict[user["Country"]][3] + 1]
         else:
-            country_dict.update({user["Country"]: 1})
+            country_dict[user["Country"]] = [user["People"], user["Planet"], user["Profit"], 1]
          
     reader.close()
-    print(country_dict)
-    return country_dict
+    #print(country_dict)
+    country_info={}
+    
+    #estimativas dos modelos ML
+    for country in country_dict.keys():
+        media = [country_dict[country][0]/ country_dict[country][3] , country_dict[country][1]/ country_dict[country][3] , country_dict[country][2]/ country_dict[country][3] ]
+        
+        results = []
+        for regressor in reg_list:
+            #pred = regressor.predict(sc.transform([media]))
+            pred = regressor.predict([media])
+            results.append(pred[0])
+        
+        
+        country_info[country] =  media + results
+        
+    #print(country_info)
+    #Calculo dos ranks
+    for x in range(3,8):#calcular o rank para cada algoritmo
+        tmp = {}
+        for country in country_info.keys():
+            tmp[country] = country_info[country][x]
+        #print(tmp)
+        ordered_tmp = dict(sorted(tmp.items(), key=lambda x:x[1]))
+        #print(ordered_tmp)
+        rank = 1
+        for country in ordered_tmp.keys():
+            copy = country_info[country].copy()
+            copy[x] = rank
+            country_info[country] = copy
+            rank += 1
+
+    #Calculo do fator mais importante
+    for country in country_info.keys():
+        ft_s = country_info[country][0] * coef_social
+        ft_a = country_info[country][1] * coef_ambiental
+        ft_e = country_info[country][2] * coef_economico
+
+        if(ft_s < ft_a and ft_s < ft_e):
+            country_info[country].append("fator social")
+        elif(ft_a < ft_s and ft_a < ft_e):
+            country_info[country].append("fator ambiental")
+        elif(ft_e < ft_s and ft_e < ft_a):
+            country_info[country].append("fator economico")
+        else:
+            country_info[country].append("fatores empatados")
+    
+    ordered_dic = dict(sorted(country_info.items(), key=lambda x:x[1][3]))
+    schema = avro.schema.parse(open(current_dir + "/indicePais.avsc", "rb").read())
+    writer = DataFileWriter(open("indicePais.avro", "wb"), DatumWriter(), schema)
+    
+    for country in ordered_dic:
+        tmp = ordered_dic[country]
+        writer.append({"Pais": country, "Fator Social": int(tmp[0]), "Fator Ambiental": int(tmp[1]), "Fator Economico": int(tmp[2]), "Rank R.Linear": tmp[3], "Rank ElasticNet" : tmp[4], "Rank LassoLars": tmp[5], "Rank Lasso" : tmp[6], "Rank Ridge": tmp[7], "Fator Mais Importante": tmp[8] })
+    writer.close()  
+    # reader = DataFileReader(open(current_dir + "/indicePais.avro", "rb"), DatumReader())
+    # for x in reader:
+    #     print(x) 
+    
 
 def findFactor():
+    global reg_list, sc
     reader = DataFileReader(open(current_dir + "/GreenCities.avro", "rb"), DatumReader())
     data_x = []
     data_y = []
@@ -95,10 +203,13 @@ def findFactor():
     x_train = vec.fit_transform(x_train).toarray()
     x_test = vec.fit_transform(x_test).toarray()
     
-    sc = StandardScaler()
-    train_input = sc.fit_transform(x_train)
-    test_input = sc.transform(x_test)
+    # sc = StandardScaler()
+    # train_input = sc.fit_transform(x_train)
+    # test_input = sc.transform(x_test)
     
+    train_input = x_train
+    test_input = x_test
+
     reg_list = []
     reg_list.append(linear_model.LinearRegression())
     reg_list.append(ElasticNet(random_state=0))
@@ -115,10 +226,12 @@ def findFactor():
         #for x in range(len(y_pred)):
             #print(names_test[x] + " , " + str(y_test[x]) + " , " + str(y_pred[x]))
         print("Coefficients: \n", regressor.coef_)
+        print("Intercept: \n", regressor.intercept_)
         # The mean squared error
         print("Mean squared error: %.2f" % mean_squared_error(y_test, y_pred))
         # The coefficient of determination: 1 is perfect prediction
         print("Coefficient of determination: %.2f" % r2_score(y_test, y_pred))
+        
         print()
     
     
@@ -127,7 +240,10 @@ def findFactor():
 
 if __name__ == "__main__":
     #csvToAvro()
-    #reading avro db
-    #indiceContinente()
-    #indicePais()
+    
     findFactor()
+    
+    #reading avro db
+    indiceContinente()
+    #indicePais()
+    

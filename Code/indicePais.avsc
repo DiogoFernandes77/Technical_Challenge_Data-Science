@@ -1,7 +1,7 @@
 {"type": "record",
  "name": "IndiceContinente",
  "fields": [
-     {"name": "Continente", "type": "string"},         
+     {"name": "Pais", "type": "string"},         
     {"name": "Fator Social", "type": "int"},
     {"name": "Fator Ambiental", "type": "int"},
     {"name": "Fator Economico", "type": "int"},
