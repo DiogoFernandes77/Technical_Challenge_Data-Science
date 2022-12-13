@@ -104,9 +104,9 @@ def indiceContinente():
         tmp = ordered_dic[continente]
         writer.append({"Continente": continente, "Fator Social": int(tmp[0]), "Fator Ambiental": int(tmp[1]), "Fator Economico": int(tmp[2]), "Rank R.Linear": tmp[3], "Rank ElasticNet" : tmp[4], "Rank LassoLars": tmp[5], "Rank Lasso" : tmp[6], "Rank Ridge": tmp[7], "Fator Mais Importante": tmp[8] })
     writer.close()  
-    reader = DataFileReader(open(current_dir + "/indiceContinente.avro", "rb"), DatumReader())
-    for x in reader:
-        print(x) 
+    # reader = DataFileReader(open(current_dir + "/indiceContinente.avro", "rb"), DatumReader())
+    # for x in reader:
+    #     print(x) 
     
     
 
@@ -182,7 +182,7 @@ def indicePais():
     #     print(x) 
     
 
-def findFactor():
+def fitModels():
     global reg_list, sc
     reader = DataFileReader(open(current_dir + "/GreenCities.avro", "rb"), DatumReader())
     data_x = []
@@ -200,16 +200,14 @@ def findFactor():
     x_train, x_test, y_train, y_test, names_train, names_test = train_test_split(data_x, data_y, data_names, test_size=0.2, random_state=2) 
     
     vec = DictVectorizer()
-    x_train = vec.fit_transform(x_train).toarray()
-    x_test = vec.fit_transform(x_test).toarray()
+    train_input = vec.fit_transform(x_train).toarray()
+    test_input = vec.fit_transform(x_test).toarray()
     
     # sc = StandardScaler()
     # train_input = sc.fit_transform(x_train)
     # test_input = sc.transform(x_test)
     
-    train_input = x_train
-    test_input = x_test
-
+   
     reg_list = []
     reg_list.append(linear_model.LinearRegression())
     reg_list.append(ElasticNet(random_state=0))
@@ -239,11 +237,11 @@ def findFactor():
         
 
 if __name__ == "__main__":
-    #csvToAvro()
+    csvToAvro()
     
-    findFactor()
+    fitModels()
     
-    #reading avro db
+    indicePais()
     indiceContinente()
-    #indicePais()
+    
     
